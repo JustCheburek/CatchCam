@@ -13,13 +13,11 @@ def install_modul(package):
 def installing_modules():
     try:
         import cv2
-        print('Успешная инициализация cv2')
     except ImportError:
         install_modul("opencv-python")
 
     try:
         import cvzone
-        print('Успешная инициализация cvzone')
     except ImportError:
         install_modul("mediapipe")
         install_modul("cvzone")
