@@ -304,6 +304,8 @@ while True:
     elif k == 102:
         recording = not recording
         print('Включение' if recording else 'Выключение', 'видео')
+    elif k != -1:
+        print(f'Вы нажали {k}, но такая кнопка не добавлена')
 
 cap.release()
 if video_recording != '':
