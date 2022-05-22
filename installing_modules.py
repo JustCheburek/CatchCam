@@ -22,6 +22,21 @@ def installing_modules():
         install_modul("mediapipe")
         install_modul("cvzone")
 
+    try:
+        import urllib
+    except ImportError:
+        install_modul('urllib3')
+
+    try:
+        import numpy as np
+    except ImportError:
+        install_modul('numpy')
+    
+    try:
+        import asyncio
+    except ImportError:
+        install_modul('asyncio')
+        
     print('Модули готовы к работе')
 
 

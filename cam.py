@@ -1,111 +1,19 @@
-import datetime
+print('Создатель: https://t.me/JustCheburek в телеге, JustCheburek#9928 в дискорде')
+import datetime  # для сохранения видео
 import os
 import installing_modules
-import settings
-if settings.modules_installing:
-    installing_modules.installing_modules()
+from settings import settings
+
+installing_modules.installing_modules()
+
+from cvzone.SelfiSegmentationModule import SelfiSegmentation
 import cv2
 import cvzone
-if settings.HANDS:
-    import HandDetectorModule as HD_module
-
-
-def check_cursor_in_cube(
-        cursor, cube, name_cube
-) -> True or False:
-    """Функция по проверке нажатия курсором на куб"""
-    if cube.get('visibility') is True:
-        cursor_x1, cursor_y1 = cursor
-        if cube['x'] - w < cursor_x1 < cube['x'] + cube['w'] and cube['y'] - h < cursor_y1 < cube['y'] + cube['h']:
-            colors[name_cube] = cube.get('color_pressed')
-            return True
-        else:
-            colors[name_cube] = cube.get('color_unpressed')
-            return False
-
-
-def check_cubes_in_1_place() -> str and (int, int):
-    x_cubes = ()
-    y_cubes = ()
-    x_for_display = y_for_display = all_cubes = 0
-    cubes_in_1_place = 1
-
-    for cube in cubes.values():
-        if cube['type'] == 'cube':
-            all_cubes += 1
-            if cube['x'] in x_cubes and cube['y'] in y_cubes:
-                cubes_in_1_place += 1
-                x_for_display = cube['x']
-                y_for_display = cube['y']
-            else:
-                x_cubes += (cube['x'],)
-                y_cubes += (cube['y'],)
-
-    if len(x_cubes) == 1 and len(y_cubes) == 1:
-        return True, (cubes_in_1_place, all_cubes), (x_for_display, y_for_display)
-
-    return False, (cubes_in_1_place, all_cubes), (x_for_display, y_for_display)
-
-
-def move_cube(cursor, cube):
-    """Функция по передвижению кубов"""
-    if cube.get('moving') is True:
-        """Движение"""
-        cursor_x, cursor_y = cursor
-        cube['x'], cube['y'] = cursor_x - cube['w'] // 2, cursor_y - cube['h'] // 2
-
-        """Физика кубов"""
-        last_cursor_cube = cubes['last_cursor']
-        if last_cursor_cube.get('x') is None or last_cursor_cube.get('y') is None:
-            return
-        if last_cursor_cube['x'] > cursor_x:
-            for _ in range(range_prediction_cubes):
-                cube['x'] -= prediction_cubes
-        elif last_cursor_cube['x'] + last_cursor_cube['w'] < cursor_x:
-            for _ in range(range_prediction_cubes):
-                cube['x'] += prediction_cubes
-        if last_cursor_cube['y'] > cursor_y:
-            for _ in range(range_prediction_cubes):
-                cube['y'] -= prediction_cubes
-        elif last_cursor_cube['y'] + last_cursor_cube['h'] < cursor_y:
-            for _ in range(range_prediction_cubes):
-                cube['y'] += prediction_cubes
-
-
-def cube_fix(cube, name):
-    """Добавление недостающих атрибутов кубов"""
-    if cube['type'] == 'text':
-        textSize = cv2.getTextSize(text=cube['text'], thickness=2,
-                                   fontScale=1, fontFace=cv2.FONT_HERSHEY_SIMPLEX)[0]
-        cube['w'] = textSize[0] + 20
-        cube['h'] = textSize[1] + 40
-
-    if cube.get('color_unpressed') is None:
-        cube['color_unpressed'] = colors['black']
-    if cube.get('color_pressed') is None:
-        cube['color_pressed'] = colors['red']
-    if cube['type'] == 'text' and cube.get('color_text') is None:
-        cube['color_text'] = colors['green']
-    if cube.get('create_cube') is None:
-        cube['create_cube'] = True
-
-    colors[name] = cube['color_unpressed']
-
-
-def change_cube_stats_to_game_stats(cube):
-    """Готовит кубы к игре"""
-    if cube['type'] == 'cube':
-        cube['visibility'], cube['moving'] = True, True
-    elif cube['type'] == 'text':
-        cube['visibility'] = False
-
-
-def change_cube_stats_to_menu_stats(cube):
-    """Готовит кубы к меню"""
-    if cube['type'] == 'cube':
-        cube['visibility'], cube['moving'] = False, False
-    elif cube['type'] == 'text':
-        cube['visibility'] = True
+import FaceMeshModule as FM_module
+import FPS_module
+import HandDetectorModule as HD_module
+import CubesHandlingModule as CH_module
+import ImagesHandlingModule as IH_module
 
 
 def video_recording_func(camera):
@@ -119,28 +27,38 @@ def video_recording_func(camera):
         video_recording.write(cv2.resize(camera, (window_width, window_height)))
 
 
-'''Видео онлайн'''
+# Видео онлайн
 cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 # размеры приложения
-window_width, window_height = 1920, 1080
+window_width, window_height = 1280, 720
 cap.set(3, window_width)
 cap.set(4, window_height)
 
-'''Детектор рук'''
-if settings.HANDS:
-    detector = HD_module.HandDetector()
+# ДЕТЕКТОРЫ
+# Рук
+detector_hands = None
+if settings['HANDS']:
+    detector_hands = HD_module.HandDetector()
+# Лица
+detector_faces = None
+if settings['FACE']['turn_on']:
+    detector_faces = FM_module.FaceMeshDetector()
+# ФПС
+detector_FPS = FPS_module.FPS()
+# Убирание фона
+remove_BG = None
+if settings['BG']['turn_on']:
+    remove_BG = SelfiSegmentation()
 
-"""Предсказания"""
-prediction_cubes = 5  # передвижение кубов
-range_prediction_cubes = 9  # насколько передвигать
+# ШРИФТ
+font = cv2.FONT_HERSHEY_SIMPLEX
 
-'''Видео'''
+# ВИДЕО
 video_recording = ''
 recording = False  # проверка на текущее видео
-FPS = 30
 time_recording = 0
 
-'''Цвета в BGR (blue green red)'''
+# ЦВЕТА в BGR (blue green red)
 colors = {
     'red': (0, 0, 255),
     'white': (255, 255, 255),
@@ -149,22 +67,36 @@ colors = {
     'blue': (255, 0, 0)
 }
 
-'''Менюшки'''
-menu = {'now': 'start menu',
-        'menus': [
-            'start menu',
-            # games
-            'touch cubes',
-            'collect all cubes'
-        ]}
+# МЕНЮ
+menu = {
+    'now': 'start menu',
+    'menus': (
+        'start menu',
+        'settings menu',
+        'touch cubes',
+        'collect all cubes',
+        '2048'),
+}
 
-'''Картинки'''
-cameraImg = cv2.imread('images/camera.png', cv2.IMREAD_UNCHANGED)
+# игры
+GameTouchCubes = CH_module.GameTouchCubes()
+GameCollectAllCubes = CH_module.GameCollectAllCubes()
+Game2048 = CH_module.Game2048()
+
+# КАРТИНКИ
+# камера
+cameraImg = IH_module.try_to_find_img('https://i.ibb.co/1bK4H73/camera.png', 'images/camera.png')
+# фон
+img_BG = None
+if settings['BG']['turn_on']:
+    img_BG = IH_module.try_to_find_img(settings['BG']['urlImg'], settings['BG']['pathImg'])
+    if img_BG is False:
+        img_BG = tuple(settings['BG']['COLOR'])
 
 '''
 Кубы, настройки:
 type
-x, y, w, h
+x, y, w, h (orig_x, orig_y для кубов, где x, y определяются автоматически)
 visibility (по умол - None)
 moving (по умол - None)
 cube corners (по умол - None)
@@ -173,95 +105,128 @@ color_unpressed (по умол - colors['black']),
 color_pressed (по умол - colors['red'])
 create_cube (по умол - True)
 '''
-w = 200
-h = 200
-size = 5
+CubesHandling = CH_module.CubesHandling(window_width=window_width, window_height=window_height)
+TransformatorCubes = CH_module.TransformatorCubes()
+
+'''
+4: {'type': 'cube', 'orig_x': 50, 'orig_y': 250, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+5: {'type': 'cube', 'orig_x': 300, 'orig_y': 250, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+6: {'type': 'cube', 'orig_x': 580, 'orig_y': 250, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+7: {'type': 'cube', 'orig_x': 850, 'orig_y': 250, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+8: {'type': 'cube', 'orig_x': 50, 'orig_y': 470, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+9: {'type': 'cube', 'orig_x': 300, 'orig_y': 470, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+10: {'type': 'cube', 'orig_x': 580, 'orig_y': 470, 'w': CubesHandling.w, 'h': CubesHandling.h,
+     'cube corners': True},
+11: {'type': 'cube', 'orig_x': 850, 'orig_y': 470, 'w': CubesHandling.w, 'h': CubesHandling.h,
+     'cube corners': True},
+'''
 
 cubes = {
-    0: {'type': 'cube', 'x': 0, 'y': 100, 'w': w, 'h': h, 'cube corners': True},
-    1: {'type': 'cube', 'x': 500, 'y': 100, 'w': w, 'h': h, 'cube corners': True},
-    2: {'type': 'cube', 'x': 1000, 'y': 100, 'w': w, 'h': h, 'cube corners': True},
+    0: {'type': 'cube', 'orig_x': 50, 'orig_y': 30, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+    1: {'type': 'cube', 'orig_x': 300, 'orig_y': 30, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+    2: {'type': 'cube', 'orig_x': 580, 'orig_y': 30, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
+    3: {'type': 'cube', 'orig_x': 850, 'orig_y': 30, 'w': CubesHandling.w, 'h': CubesHandling.h, 'cube corners': True},
 
     # обязательно
     menu['menus'][1]: {
         'type': 'text', 'x': 100, 'y': 100, 'text': menu['menus'][1], 'visibility': True, 'cube corners': True
     },
     menu['menus'][2]: {
-        'type': 'text', 'x': 100, 'y': 200, 'text': menu['menus'][2], 'visibility': True, 'cube corners': True
+        'type': 'text', 'x': 400, 'y': 100, 'text': menu['menus'][2], 'visibility': True, 'cube corners': True
+    },
+    menu['menus'][3]: {
+        'type': 'text', 'x': 650, 'y': 100, 'text': menu['menus'][3], 'visibility': True, 'cube corners': True
+    },
+    menu['menus'][4]: {
+        'type': 'text', 'x': 1000, 'y': 100, 'text': menu['menus'][4], 'visibility': True, 'cube corners': True
     },
     'ready_cubes': {
-        'type': 'text', 'x': 0, 'y': 0, 'text': '0/0', 'cube corners': False, 'create_cube': False
-    },
-    'cameraImg': {
-        'type': 'image', 'x': 10, 'y': 10, 'w': 0, 'h': 0, 'object': cameraImg, 'create_cube': False
+        'type': 'text', 'x': 0, 'y': 0, 'text': '', 'create_cube': False
     },
 }
 
 for n_cube in cubes:
-    cube_fix(cubes[n_cube], n_cube)
+    TransformatorCubes.cube_fix(cubes[n_cube], n_cube, colors)
 
 while True:
-    """Изображение"""
+    # ИЗОБРАЖЕНИЕ
     success, img = cap.read()  # чтения изображения
     img = cv2.flip(img, 1)  # отзеркаленное изображение
 
-    """Проверка рук"""
-    if settings.HANDS:
-        hands, _ = detector.findHands(img)  # детектор рук
+    # УБИРАНИЕ ФОНА
+    if settings['BG']['turn_on']:
+        img = remove_BG.removeBG(img, img_BG, threshold=settings.settings['BG']['threshold'])
+
+    # ПРОВЕРКА РУК
+    if settings['HANDS']:
+        hands = detector_hands.findHands(img, menu, timer=getattr(Game2048, 'time_move'))  # детектор рук
         if hands:
             for hand in hands:
                 index_finger = hand['lmList'][8]
                 middle_finger = hand['lmList'][12]
+                index_finger_BP = hand['lmList'][5]  # расшифровка BP - BOTTOM POINT
+                middle_finger_BP = hand['lmList'][9]  # расшифровка BP - BOTTOM POINT
                 bottom_point = hand['lmList'][0]
 
-                l, c = detector.findDistance((index_finger[0], index_finger[1]),
-                                             (middle_finger[0], middle_finger[1]))
-                c_x, c_y = c[4], c[5]
+                # расшифровка: l - длина (length), c - координаты (coords), FT - fingertip (кончики пальцев)
+                l_FT, c_FT = detector_hands.findDistance((index_finger[0], index_finger[1]),
+                                                         (middle_finger[0], middle_finger[1]))
+                x_FT, y_FT = c_FT[4], c_FT[5]
 
-                if settings.show_number_fingers:
-                    fingers = detector.fingersUp(hand)
-                    number_fingers = cubes.get('number fingers')
-                    if number_fingers is None:
-                        cubes['number fingers'] = {
-                            'type': 'text', 'x': 0, 'y': 0, 'text': '', 'color_text': colors['black'],
-                            'visibility': True, 'cube corners': False, 'create_cube': False
-                        }
-                        cube_fix(cubes.get('number fingers'), 'number fingers')
-                    else:
-                        cubes['number fingers']['visibility'] = True
-                        number_fingers['x'] = bottom_point[0] - number_fingers['w']
-                        number_fingers['y'] = bottom_point[1] - number_fingers['h'] // 2
-                        number_fingers['text'] = str(sum(fingers))
+                # расшифровка: l - длина (length), c - координаты (coords), BP - BOTTOM POINT
+                _, c_BP = detector_hands.findDistance((index_finger_BP[0], index_finger_BP[1]),
+                                                      (middle_finger_BP[0], middle_finger_BP[1]))
+                x_BP, y_BP = c_BP[4], c_BP[5]
 
-                for n_cube in cubes:
-                    if l < 30 and check_cursor_in_cube((c_x, c_y), cubes[n_cube], n_cube):
-                        if menu['now'] == menu['menus'][0]:
-                            if n_cube == menu['menus'][1]:  # проверка нажатия на текст
+                fingers = detector_hands.fingersUp(hand)
+
+                for cube in cubes:
+                    if l_FT < 35 and CubesHandling.check_cursor_in_cube(
+                            (x_FT, y_FT), cubes[cube], cube, colors, menu['now']) or menu['now'] == '2048':
+                        # Start menu
+                        if menu['now'] == menu['menus'][0] and cube in menu['menus']:
+                            # суть игры
+                            essence = None
+
+                            if cube == menu['menus'][1]:  # проверка нажатия на текст
                                 menu['now'] = menu['menus'][1]  # смена игры
-                                for n_cube2 in cubes.values():
-                                    change_cube_stats_to_game_stats(n_cube2)
-                            elif n_cube == menu['menus'][2]:
+                                essence = 'можно настроить всё под себя'
+
+                            if cube == menu['menus'][2]:  # проверка нажатия на текст
                                 menu['now'] = menu['menus'][2]  # смена игры
-                                for n_cube2 in cubes.values():
-                                    change_cube_stats_to_game_stats(n_cube2)
-                            else:
-                                cubes['ready_cubes']['visibility'] = False
-                                for n_cube2 in cubes.values():
-                                    change_cube_stats_to_menu_stats(n_cube2)
+                                essence = 'суть проста - её нет)'
 
-                        elif menu['now'] == menu['menus'][1]:
-                            move_cube((c_x, c_y), cubes[n_cube])
+                            elif cube == menu['menus'][3]:  # проверка нажатия на текст
+                                menu['now'] = menu['menus'][3]  # смена игры
+                                essence = 'собрать все кубы в друг друга'
 
-                        elif menu['now'] == menu['menus'][2]:
-                            move_cube((c_x, c_y), cubes[n_cube])
-                            suc, cubes_in_1_place_game, coords = check_cubes_in_1_place()
-                            if suc:
-                                cubes['ready_cubes']['text'] = 'win(CTRL+Z)'
-                            else:
-                                cubes['ready_cubes']['visibility'] = True
-                                cubes['ready_cubes']['x'] = coords[0]
-                                cubes['ready_cubes']['y'] = coords[1]
-                                cubes['ready_cubes']['text'] = f'{cubes_in_1_place_game[0]}/{cubes_in_1_place_game[1]}'
+                            elif cube == menu['menus'][4]:
+                                menu['now'] = menu['menus'][4]  # смена игры
+                                essence = 'собрать куб 2048'
+
+                            print(f'Режим - {menu["now"]}, суть проста - {essence}, чтобы вернуться жми - CTRL + Z')
+
+                            for n_cube in cubes:
+                                TransformatorCubes.change_cube_stats_to_game_stats(cubes[n_cube], n_cube, menu['now'],
+                                                                                   colors)
+
+                        # Настройки
+                        if menu['now'] == menu['menus'][1]:
+                            print(settings)
+
+                        # touch cubes
+                        if menu['now'] == menu['menus'][2]:
+                            GameTouchCubes.play(cubes, cubes[cube], img, colors)
+                            CubesHandling.move_cube(cubes, (x_FT, y_FT), cubes[cube])
+
+                        # collect all cubes
+                        elif menu['now'] == menu['menus'][3]:
+                            GameCollectAllCubes.play(cubes)
+                            CubesHandling.move_cube(cubes, (x_FT, y_FT), cubes[cube])
+
+                        # 2048
+                        elif menu['now'] == menu['menus'][4]:
+                            Game2048.play(fingers, (x_FT, y_FT), (x_BP, y_BP))
 
                 last_cursor = cubes.get('last_cursor')
                 # создание последнего курсора, если не найден
@@ -269,80 +234,82 @@ while True:
                     last_cursor = cubes['last_cursor'] = {'type': 'cursor', 'w': 25, 'h': 25}
                 # сохранение последнего курсора
                 last_cursor['x'], last_cursor['y'] = \
-                    index_finger[0] - last_cursor['w'] // 2, index_finger[1] - last_cursor['h'] // 2
+                    x_FT - last_cursor['w'] // 2, y_FT - last_cursor['h'] // 2
 
-        else:
-            if cubes.get('number fingers') is not None:
-                cubes['number fingers']['visibility'] = False
-
-    """Рисование"""
+    # РИСОВАНИЕ
     for n_cube in cubes:
         """Кубы"""
-        cube_ = cubes[n_cube]
-        if cube_.get('visibility') is True:
+        cube = cubes[n_cube]
+        if cube.get('visibility') is True:
             """Текст"""
-            if cube_['type'] == 'text':
-                cv2.putText(img, cube_['text'],
-                            (cube_['x'] + 10, cube_['y'] + 40),
-                            cv2.FONT_HERSHEY_SIMPLEX, 1, cube_['color_text'], 2)
+            if cube['type'] == 'text':
+                cv2.putText(img, cube['text'],
+                            (cube['x'] + 10, cube['y'] + 40),
+                            font, 1, cube['color_text'], 2)
 
             """Общее"""
-            if cube_.get('create_cube') is True:
-                cv2.rectangle(img, (cube_['x'], cube_['y']),
-                              (cube_['x'] + cube_['w'], cube_['y'] + cube_['h']),
-                              colors[n_cube], size)
+            if cube.get('create_cube') is True:
+                cv2.rectangle(img, (cube['x'], cube['y']),
+                              (cube['x'] + cube['w'], cube['y'] + cube['h']),
+                              colors[n_cube], CubesHandling.size)
 
-            if cube_.get('cube corners') is True:
-                cvzone.cornerRect(img, (cube_['x'], cube_['y'], cube_['w'], cube_['h']),
-                                  size, rt=0)
+            if cube.get('cube corners') is True:
+                cvzone.cornerRect(img, (cube['x'], cube['y'], cube['w'], cube['h']),
+                                  1, rt=0)
 
             """Картинки"""
-            if cube_['type'] == 'image':
-                img = cvzone.overlayPNG(img, cube_['object'],
-                                        (cube_['x'], cube_['y']))
+            if cube['type'] == 'image':
+                cvzone.overlayPNG(img, cube['object'],
+                                  (cube['x'], cube['y']))
 
-    """Видео"""
-    if recording and settings.RECORDING:
+    # ВИДЕО
+    if recording:
         if video_recording == '':
             if not os.path.isdir('recording'):
                 os.mkdir('recording')
             video_recording = cv2.VideoWriter(
                 f'recording/video {datetime.datetime.today().strftime("%Y-%m-%d %H-%M-%S")}.mp4',
-                cv2.VideoWriter_fourcc(*'MP4V'), FPS, (window_width, window_height))
-        cube_cameraImg = cubes['cameraImg']
+                cv2.VideoWriter_fourcc(*'MP4V'), 19, (window_width, window_height))
         img = cvzone.overlayPNG(img, cameraImg,
-                                (cube_cameraImg['x'], cube_cameraImg['y']))
+                                (10, 15))
         cv2.putText(img, str(round(time_recording)),
-                    (cube_cameraImg['x'], cube_cameraImg['y'] + 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1, colors['white'], 2)
+                    (10, 45),
+                    font, 1, colors['white'], 2)
         video_recording_func(img)
 
-    '''Лицо'''
-    if settings.FACE:
-        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        haar_face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_alt.xml')
-        faces = haar_face_cascade.detectMultiScale(gray_img)
-        if isinstance(settings.BLUR, int):
-            for (x_, y_, w_, h_) in faces:
-                # cv2.rectangle(img, (x_, y_), (x_ + w_, y_ + h_), colors['white'], 1)
-                img[y_:y_ + h_, x_:x_ + w_] = cv2.medianBlur(img[y_:y_ + h_, x_:x_ + w_], settings.BLUR)
+    # ЛИЦО
+    if settings['FACE']['turn_on']:
+        faces = detector_faces.findFaceMesh(img, draw=settings.settings['FACE']['draw_face'])
 
-    cv2.imshow('camera', img)
+    # ФПС
+    if settings['FPS_IMG']:
+        fps, img = detector_FPS.update(img, (10, 15), colors['red'], 1, 1)
 
-    """Кнопки"""
+    # КНОПКИ
     k = cv2.waitKey(10)
     if k == 27:  # ESC
         print('Закрытие')
         break
-    elif k == 102:  # F
+    elif k == 102 or k == 224:  # F
         recording = not recording
         print('Включение' if recording else 'Выключение', 'видео')
     elif k == 26:  # CTRL + Z
         if menu['now'] != menu['menus'][0]:
             menu['now'] = menu['menus'][0]
             print('Возращение')
+            cubes['ready_cubes']['visibility'] = False
+            cubes['ready_cubes']['text'] = ''
+            for n_cube2 in cubes.values():
+                TransformatorCubes.change_cube_stats_to_menu_stats(n_cube2)
+        else:
+            print('Вы уже в главном меню')
+    elif k == 9:
+        print('Инфа о кубах и меню:', cubes, menu, sep='\n')
     elif k != -1:
         print(f'Вы нажали {k}, но такая кнопка не добавлена')
+
+    # ПОКАЗ ОНЛАЙН КАМЕРЫ
+    cv2.imshow('camera', img)
 
 cap.release()
 if video_recording != '':

@@ -1,1 +1,14 @@
-{"HANDS": true, "FACE": false, "BLUR": 35, "show_number_fingers": true, "RECORDING": true, "modules_installing": true}
+{
+  "HANDS": true,
+  "FACE": {
+    "turn_on": false,
+      "draw_face": false
+  },
+  "FPS_IMG": true,
+  "BG": {
+    "turn_on": false,
+      "threshold": 0.1,
+      "COLOR": [255, 0, 0],
+      "pathImg": "",
+      "urlImg": ""}
+}

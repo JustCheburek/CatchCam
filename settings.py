@@ -17,9 +17,3 @@ def save(**settings_given):
 
 
 settings = read()
-HANDS = settings['HANDS']  # работа с руками
-FACE = settings['FACE']  # работа с лицом
-BLUR = settings['BLUR']  # уровень размазывания
-show_number_fingers = settings['show_number_fingers']
-RECORDING = settings['RECORDING']  # работа с видео
-modules_installing = settings['modules_installing']  # установка модулей
