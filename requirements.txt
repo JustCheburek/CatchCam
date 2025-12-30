@@ -2,3 +2,4 @@ numpy
 opencv-python
 mediapipe==0.10.21
 cvzone
+pyyaml

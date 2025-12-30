@@ -1,7 +1,7 @@
 import cv2
 
 
-class GameCollectAllCubes:
+class CollectAllCubes:
     """Игра по собиранию всех кубов в кучу"""
 
     def __init__(self):
@@ -38,6 +38,6 @@ class GameCollectAllCubes:
             cubes['ready_cubes']['text'] = 'WIN(ctrl+z)'
         else:
             cubes['ready_cubes']['x'], cubes['ready_cubes']['y'] = (self.x_for_display, self.y_for_display)
-            cubes['ready_cubes']['text'] = f'{cubes_in_1_place} of {all_cubes}'
+            cubes['ready_cubes']['text'] = f'{cubes_in_1_place} / {all_cubes}'
             if cubes_in_1_place != 2:
                 cubes['ready_cubes']['visibility'] = True

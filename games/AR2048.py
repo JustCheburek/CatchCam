@@ -3,7 +3,7 @@ import numpy as np
 import time
 
 
-class LogicGame2048:
+class Logic2048:
     def __init__(self, width=4, height=4):
         self.mat = []
         self.width = width
@@ -27,7 +27,7 @@ class LogicGame2048:
     def get_current_state(self):
         for line in self.mat:
             if 2048 in line:
-                return 'Выигрыш \n1) ctrl + z, чтобы вернуться \n2) Можете продолжить играть, при этом 2048 пропадёт'
+                return "Выигрыш \n1) ctrl + z, чтобы вернуться \n2) Можете продолжить играть, при этом 2048 пропадёт"
 
             if 0 in line:
                 self.add_new_2()
@@ -37,22 +37,22 @@ class LogicGame2048:
             for element_index in range(self.width - 1):
                 main_element = self.mat[line][element_index]
 
-                right_element = self.mat[line][element + 1]
-                down_element = self.mat[line + 1][element]
+                right_element = self.mat[line][element_index + 1]
+                down_element = self.mat[line + 1][element_index]
 
                 if main_element == down_element or main_element == right_element:
-                    add_new_2()
+                    self.add_new_2()
                     return
 
             up_element = self.mat[line + 1][self.width - 1]
-            if mat[line][3] == up_element:
+            if self.mat[line][3] == up_element:
                 return
 
             left_element = self.mat[self.height - 1][line + 1]  # line = element_index
-            if mat[3][line] == left_element:
+            if self.mat[3][line] == left_element:
                 return
 
-        return 'Проигрыш \nctrl + z, чтобы вернуться'
+        return "Проигрыш \nctrl + z, чтобы вернуться"
 
     def print_mat(self, text=None):
         for line in self.mat:
@@ -126,7 +126,7 @@ class LogicGame2048:
         self.mat = new_mat
 
 
-class Game2048(LogicGame2048):
+class AR2048(Logic2048):
     """Игра 2048"""
 
     def __init__(self):
@@ -145,54 +145,51 @@ class Game2048(LogicGame2048):
         else:
             return False
 
-    def play(self, cubes, colors, fingers, fingertips, bottom_point):
+    def play(self, cubes, colors, gesture):
         self.time_move = time.perf_counter() - self.last_time
 
         if self.time_move < 3:
             return
 
-        if sum(fingers[1:3]) == 2 and sum(fingers[3:5]) == 0:
-            x_FT, y_FT = fingertips[0], fingertips[1]
-            x_BP, y_BP = bottom_point[0], bottom_point[1]
+        move_made = False
+        if gesture == "RIGHT_2":
+            print("Вправо")
+            self.move_right()
+            move_made = True
+        elif gesture == "LEFT_2":
+            print("Влево")
+            self.move_left()
+            move_made = True
+        elif gesture == "UP_2":
+            print("Вверх")
+            self.move_up()
+            move_made = True
+        elif gesture == "DOWN_2":
+            print("Вниз")
+            self.move_down()
+            move_made = True
 
-            # вправо
-            if x_FT > x_BP and self.near_coord(y_FT, y_BP):
-                print('Вправо')
-                self.move_right()
-
-            # влево
-            elif x_FT < x_BP and self.near_coord(y_FT, y_BP):
-                print('Влево')
-                self.move_left()
-
-            # вверх
-            elif y_FT < y_BP and self.near_coord(x_FT, x_BP):
-                print('Вверх')
-                self.move_up()
-
-            # вниз
-            elif y_FT > y_BP and self.near_coord(x_FT, x_BP):
-                print('Вниз')
-                self.move_down()
-
+        if move_made:
             self.print_mat(self.get_current_state())
 
             for cube in cubes:
-                if cubes[cube]['type'] == 'text_2048':
-                    if cubes[cube]['text'] == 'WIN(ctrl+z)':
-                        self.mat[int(cube) // 4][int(cube) % 4] = cubes[cube]['text'] = 0
+                if cubes[cube]["type"] == "text_2048":
+                    if cubes[cube]["text"] == "WIN(ctrl+z)":
+                        self.mat[int(cube) // 4][int(cube) % 4] = cubes[cube][
+                            "text"
+                        ] = 0
 
-                    cubes[cube]['text'] = str(self.mat[int(cube) // 4][int(cube) % 4])
+                    cubes[cube]["text"] = str(self.mat[int(cube) // 4][int(cube) % 4])
 
-                    if 2 <= int(cubes[cube]['text']) <= 16:
-                        cubes[cube]['color_text'] = colors['green']
-                    elif 16 < int(cubes[cube]['text']) <= 256:
-                        cubes[cube]['color_text'] = colors['yellow']
-                    elif 256 < int(cubes[cube]['text']):
-                        cubes[cube]['color_text'] = colors['red']
+                    if 2 <= int(cubes[cube]["text"]) <= 16:
+                        cubes[cube]["color_text"] = colors["green"]
+                    elif 16 < int(cubes[cube]["text"]) <= 256:
+                        cubes[cube]["color_text"] = colors["yellow"]
+                    elif 256 < int(cubes[cube]["text"]):
+                        cubes[cube]["color_text"] = colors["red"]
                     else:
-                        cubes[cube]['color_text'] = colors['black']
-                    if int(cubes[cube]['text']) == 2048:
-                        cubes[cube]['text'] = 'WIN(ctrl+z)'
+                        cubes[cube]["color_text"] = colors["black"]
+                    if int(cubes[cube]["text"]) == 2048:
+                        cubes[cube]["text"] = "WIN(ctrl+z)"
 
             self.last_time = time.perf_counter()
