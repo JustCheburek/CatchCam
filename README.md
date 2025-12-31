@@ -39,6 +39,11 @@
 python main.py
 ```
 
+Для создания .exe файла используйте команду:
+```bash
+pyinstaller --onefile --collect-all mediapipe main.py
+```
+
 ### Управление в приложении
 
 | Клавиша      | Действие                                |
