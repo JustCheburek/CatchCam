@@ -285,35 +285,6 @@ class HandDetector:
 
         return "NONE"
 
-    def is_heart_gesture(self, hands, threshold=50):
-        """
-        Проверяет, образуют ли две руки жест "Сердце" (как на картинке).
-        Условия: кончики указательных пальцев и кончики больших пальцев обеих рук находятся рядом.
-        """
-        if len(hands) != 2:
-            return False
-
-        hand1_lm = hands[0]["lmList"]
-        hand2_lm = hands[1]["lmList"]
-
-        # 4 - Большой палец (кончик)
-        # 8 - Указательный палец (кончик)
-
-        # Расстояние между указательными пальцами
-        dist_index = math.hypot(
-            hand1_lm[8][0] - hand2_lm[8][0], hand1_lm[8][1] - hand2_lm[8][1]
-        )
-        # Расстояние между большими пальцами
-        dist_thumb = math.hypot(
-            hand1_lm[4][0] - hand2_lm[4][0], hand1_lm[4][1] - hand2_lm[4][1]
-        )
-
-        # Если оба расстояния меньше порога - это жест "Сердце"
-        if dist_index < threshold and dist_thumb < threshold:
-            return True
-
-        return False
-
     @staticmethod
     def findDistance(p1, p2, img=None, draw=True):
         """

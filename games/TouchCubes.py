@@ -13,10 +13,8 @@ class TouchCubes(CubesHandling):
         self.draw_face(main_cube, img, colors)
 
     @staticmethod
-    def contact_controller_cubes(
-        cubes, main_cube, power_push=4
-    ):  # чем больше power_push, тем слабее пинок
-        """Функция по проверке касания главного куба с второстепенным"""
+    def contact_controller_cubes(cubes, main_cube, power_push=4):
+        """Улучшенная функция проверки столкновений на основе векторов"""
         for cube in cubes.values():
             if (
                 cube != main_cube
@@ -25,95 +23,40 @@ class TouchCubes(CubesHandling):
                 and main_cube["type"] == "cube"
                 and main_cube.get("moving")
             ):
-                """
-                Толкашки
-                помогалка - https://cdn.discordapp.com/attachments/726314300502835241/975339515076026378/unknown.png
-                """
+                # Проверка пересечения (AABB)
                 if (
-                    cube["y"] + cube["h"] / 3
-                    < main_cube["y"] + main_cube["h"] / 2
-                    < cube["y"] + cube["h"] * (3 / 4)
+                    main_cube["x"] < cube["x"] + cube["w"]
+                    and main_cube["x"] + main_cube["w"] > cube["x"]
+                    and main_cube["y"] < cube["y"] + cube["h"]
+                    and main_cube["y"] + main_cube["h"] > cube["y"]
                 ):
-                    # 6 ЧАСТЬ (с начала x до половины w) восток
-                    if (
-                        cube["x"]
-                        <= main_cube["x"] + main_cube["w"]
-                        <= cube["x"] + cube["w"] / 2
-                    ):
-                        cube["x"] += main_cube["w"] // power_push
+                    # Вычисляем центры
+                    cx1, cy1 = (
+                        main_cube["x"] + main_cube["w"] // 2,
+                        main_cube["y"] + main_cube["h"] // 2,
+                    )
+                    cx2, cy2 = cube["x"] + cube["w"] // 2, cube["y"] + cube["h"] // 2
 
-                    # 5 ЧАСТЬ (c половины w до конца w) запад
-                    elif (
-                        cube["x"] + cube["w"] / 2
-                        <= main_cube["x"]
-                        <= cube["x"] + cube["w"]
-                    ):
-                        cube["x"] -= main_cube["w"] // power_push
+                    # Вектор от главного куба к целевому
+                    dx = cx2 - cx1
+                    dy = cy2 - cy1
 
-                if (
-                    cube["x"] + cube["w"] / 3
-                    < main_cube["x"] + main_cube["w"] / 2
-                    < cube["x"] + cube["w"] * (3 / 4)
-                ):
-                    # 7 ЧАСТЬ (с начала y до половины h) север
-                    if (
-                        cube["y"]
-                        <= main_cube["y"] + main_cube["h"]
-                        <= cube["y"] + cube["h"] / 2
-                    ):
-                        cube["y"] += main_cube["h"] // power_push
+                    # Отталкиваем
+                    push_x = main_cube["w"] // power_push
+                    push_y = main_cube["h"] // power_push
 
-                    # 8 ЧАСТЬ (c половины h до конца h) юг
-                    elif (
-                        cube["y"] + cube["h"] / 2
-                        <= main_cube["y"]
-                        <= cube["y"] + cube["h"]
-                    ):
-                        cube["y"] -= main_cube["h"] // power_push
-
-                # 1 ЧАСТЬ (с половины w до конца w, с начала y до половины h)
-                if (
-                    cube["x"] + cube["w"] / 2 <= main_cube["x"] <= cube["x"] + cube["w"]
-                    and cube["y"]
-                    <= main_cube["y"] + main_cube["h"]
-                    <= cube["y"] + cube["h"] / 2
-                ):
-                    cube["y"] += main_cube["h"] // power_push
-                    cube["x"] -= main_cube["w"] // power_push
-
-                # 2 ЧАСТЬ (с половины w до конца w, с половины h до конца h)
-                if (
-                    cube["x"] + cube["w"] / 2 <= main_cube["x"] <= cube["x"] + cube["w"]
-                    and cube["y"] + cube["h"] / 2
-                    <= main_cube["y"]
-                    <= cube["y"] + cube["h"]
-                ):
-                    cube["y"] -= main_cube["h"] // power_push
-                    cube["x"] -= main_cube["w"] // power_push
-
-                # 3 ЧАСТЬ (с начала x до половины w, с половины h до конца h)
-                if (
-                    cube["x"]
-                    <= main_cube["x"] + main_cube["w"]
-                    <= cube["x"] + cube["w"] / 2
-                    and cube["y"] + cube["h"] / 2
-                    <= main_cube["y"]
-                    <= cube["y"] + cube["h"]
-                ):
-                    cube["y"] -= main_cube["h"] // power_push
-                    cube["x"] += main_cube["w"] // power_push
-
-                # 4 ЧАСТЬ (с начала x до половины w, с начала y до половины h)
-                if (
-                    cube["x"]
-                    <= main_cube["x"] + main_cube["w"]
-                    <= cube["x"] + cube["w"] / 2
-                    and cube["y"]
-                    <= main_cube["y"] + main_cube["h"]
-                    <= cube["y"] + cube["h"] / 2
-                ):
-                    cube["y"] += main_cube["h"] // power_push
-                    cube["x"] += main_cube["w"] // power_push
+                    if abs(dx) > abs(dy):
+                        # Горизонтальный толчок
+                        if dx > 0:
+                            cube["x"] += push_x
+                        else:
+                            cube["x"] -= push_x
+                    else:
+                        # Вертикальный толчок
+                        if dy > 0:
+                            cube["y"] += push_y
+                        else:
+                            cube["y"] -= push_y
 
     def screen_limits_controller_cubes(self, cubes, main_cube):
         """Проверка на выход за границы экрана"""

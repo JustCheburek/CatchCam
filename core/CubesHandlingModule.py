@@ -87,12 +87,25 @@ class CubesHandling:
                 for _ in range(self.range_prediction_cubes):
                     cube["y"] += self.prediction_move_cubes
 
-    def move_cube(self, cubes, cursor, cube, with_prediction: bool = True):
-        """Функция по передвижению кубов и по их предсказаниям"""
+    def move_cube(
+        self,
+        cubes,
+        cursor,
+        cube,
+        with_prediction: bool = True,
+        lerp_factor: float = 0.3,
+    ):
+        """Функция по передвижению кубов с плавным следованием (lerp)"""
         if cube.get("moving") is True:
-            # Движение
             cursor_x, cursor_y = cursor
-            cube["x"], cube["y"] = cursor_x - cube["w"] // 2, cursor_y - cube["h"] // 2
+
+            # Целевые координаты (центр куба в курсоре)
+            target_x = cursor_x - cube["w"] // 2
+            target_y = cursor_y - cube["h"] // 2
+
+            # Плавное движение (Lerp)
+            cube["x"] = int(cube["x"] + (target_x - cube["x"]) * lerp_factor)
+            cube["y"] = int(cube["y"] + (target_y - cube["y"]) * lerp_factor)
 
             if with_prediction:
                 self.prediction_cubes(cube, cubes, cursor)

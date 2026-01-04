@@ -199,10 +199,6 @@ while True:
             img, current_game, timer=getattr(Game2048, "time_move")
         )
         if hands:
-            # Обработка жеста "Сердце" двумя руками (выход в меню)
-            if detector_hands.is_heart_gesture(hands):
-                return_to_menu()
-
             for hand in hands:
                 # Получаем жест и список пальцев
                 gesture = detector_hands.get_gesture(hand)
