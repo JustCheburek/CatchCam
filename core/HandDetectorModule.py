@@ -145,11 +145,10 @@ class HandDetector:
         Finds how many fingers are open and returns in a list.
         Considers left and right hands separately
         """
-        global fingers
         myHandType = myHand["type"]
         myLmList = myHand["lmList"]
+        fingers = [0] * 5
         if self.results.multi_hand_landmarks:
-            fingers = []
             bottom_point = myLmList[0]
             left_point = myLmList[2]
             right_point = myLmList[17]
@@ -158,14 +157,14 @@ class HandDetector:
             # Большой палец
             if myHandType == "Right":
                 if myLmList[self.tipIds[0]][0] > myLmList[self.tipIds[0] - 1][0]:
-                    fingers.append(1)
+                    fingers[0] = 1
                 else:
-                    fingers.append(0)
+                    fingers[0] = 0
             else:
                 if myLmList[self.tipIds[0]][0] < myLmList[self.tipIds[0] - 1][0]:
-                    fingers.append(1)
+                    fingers[0] = 1
                 else:
-                    fingers.append(0)
+                    fingers[0] = 0
 
             # Остальные 4 пальца
             for id in range(1, 5):
@@ -184,18 +183,18 @@ class HandDetector:
                             myLmList[self.tipIds[id]][1]
                             <= myLmList[self.tipIds[id] - 2][1]
                         ):
-                            fingers.append(1)
+                            fingers[id] = 1
                         else:
-                            fingers.append(0)
+                            fingers[id] = 0
                     # низ
                     else:
                         if (
                             myLmList[self.tipIds[id]][1]
                             >= myLmList[self.tipIds[id] - 2][1]
                         ):
-                            fingers.append(1)
+                            fingers[id] = 1
                         else:
-                            fingers.append(0)
+                            fingers[id] = 0
 
                 # разделение на левую и правую части
                 elif (
@@ -212,18 +211,25 @@ class HandDetector:
                             myLmList[self.tipIds[id]][0]
                             <= myLmList[self.tipIds[id] - 2][0]
                         ):
-                            fingers.append(1)
+                            fingers[id] = 1
                         else:
-                            fingers.append(0)
+                            fingers[id] = 0
                     # право
                     else:
                         if (
                             myLmList[self.tipIds[id]][0]
                             >= myLmList[self.tipIds[id] - 2][0]
                         ):
-                            fingers.append(1)
+                            fingers[id] = 1
                         else:
-                            fingers.append(0)
+                            fingers[id] = 0
+
+                # Дополнительная проверка, если ни одно из условий выше не сработало (наклон руки)
+                else:
+                    if myLmList[self.tipIds[id]][1] <= myLmList[self.tipIds[id] - 2][1]:
+                        fingers[id] = 1
+                    else:
+                        fingers[id] = 0
 
         return fingers
 
@@ -233,6 +239,9 @@ class HandDetector:
         Возвращает строку с названием жеста.
         """
         fingers = self.fingersUp(myHand)
+        if len(fingers) < 5:
+            return "NONE"
+
         lmList = myHand["lmList"]
 
         # 2 ПАЛЬЦА (Указательный и Средний)
