@@ -50,6 +50,8 @@ class HandDetector:
         :param flipType: Отзеркалить ли тип руки (Левая/Правая)
         :param timer: Таймер для вывода доп. инфы (для 2048)
         """
+        if img is None:
+            return []
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.hands.process(imgRGB)
         allHands = []

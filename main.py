@@ -49,7 +49,7 @@ def return_to_menu():
 
 
 # Видео онлайн
-cap = cv2.VideoCapture(1, cv2.CAP_DSHOW)
+cap = cv2.VideoCapture(settings.get("CAMERA_INDEX", 0), cv2.CAP_DSHOW)
 # размеры приложения
 window_width, window_height = 1280, 720
 cap.set(3, window_width)
@@ -182,6 +182,10 @@ fingers_positions = []
 while True:
     # ИЗОБРАЖЕНИЕ
     success, img = cap.read()  # чтения изображения
+    if not success or img is None:
+        print("Ошибка: Не удалось получить кадр с камеры.")
+        cv2.waitKey(1000)  # Подождать секунду перед попыткой
+        continue
     img = cv2.flip(img, 1)  # отзеркаленное изображение
 
     # УБИРАНИЕ ФОНА
