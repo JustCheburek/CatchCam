@@ -199,6 +199,10 @@ while True:
             img, current_game, timer=getattr(Game2048, "time_move")
         )
         if hands:
+            # Обработка жеста "Сердце" двумя руками (выход в меню)
+            if detector_hands.is_heart_gesture(hands):
+                return_to_menu()
+
             for hand in hands:
                 # Получаем жест и список пальцев
                 gesture = detector_hands.get_gesture(hand)
@@ -215,10 +219,6 @@ while True:
                 # Режим: 2048 (жесты управляют игрой)
                 if current_game == GAME_STATES["2048"]:
                     Game2048.play(cubes, colors, gesture)
-
-                # Обработка жеста BACK (выход в меню)
-                if gesture == "BACK":
-                    return_to_menu()
 
                 # Взаимодействие с кубами (через жест PINCH_2)
                 for cube_id in cubes:
