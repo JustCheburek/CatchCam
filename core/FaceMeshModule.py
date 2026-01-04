@@ -55,7 +55,7 @@ class FaceMeshDetector:
         :param draw: Flag to draw the output on the image.
         :return: Image with or without drawings
         """
-        if img is None:
+        if img is None or img.size == 0:
             return []
         self.imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.results = self.faceMesh.process(self.imgRGB)
